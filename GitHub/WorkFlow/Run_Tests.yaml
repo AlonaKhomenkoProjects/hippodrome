@@ -1,0 +1,56 @@
+имя : Выполнить тесты
+
+на : [нажать]
+
+вакансии :
+  строить :
+    запускается на : ubuntu-latest
+
+    разрешения :
+      содержание : читать
+      вопросы : читать
+      чеки : писать
+      запросы на извлечение : пишите
+
+    шаги :
+      - использует : actions/checkout@v3
+      - имя : Настройка JDK 17
+        использует : actions/setup-java@v3
+        с :
+          java-версия : ' 17 '
+          распределение : ' temurin '
+      - имя : Запуск тестов с помощью Maven
+        выполнить : mvn --batch-mode --update-snapshots test
+
+      - имя : Отчет об испытаниях 1
+        использует : EnricoMi/publish-unit-test-result-action@v2
+        если : всегда()
+        с :
+          файлы : |
+            target/surefire-reports/*.xml
+          report_individual_runs : true
+
+      - имя : Отчет об испытаниях 2
+        использует : dorny/test-reporter@v1
+        if : always()     # выполнить этот шаг, даже если предыдущий шаг не удался
+        с :
+          Имя : Отчет об испытаниях 2            # Имя проверочного прогона, который будет создан
+          path : target/surefire-reports/*.xml     # Путь к результатам теста
+          reporter : java-junit         # Формат результатов теста
+
+      - имя : Отчет об испытаниях 3
+        использует : mikepenz/action-junit-report@v3
+        if : always() # всегда выполнять, даже если предыдущий шаг не удался
+        с :
+          report_paths : ' target/surefire-reports/*.xml '
+
+      - имя : Загрузить результаты теста на testhub.io
+        если : всегда()
+        использует : testhub-io/testhub-io.action@v0.62
+        с :
+          test_result_pattern : " target/surefire-reports/*.xml "
+          test_coverage_pattern : " target/site/jacoco/jacoco.xml "
+
+      - имя : Показать журналы
+        выполните : cd logs && ls -R && echo '\n' && grep . *
+        если : всегда()
